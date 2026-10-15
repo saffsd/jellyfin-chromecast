@@ -201,6 +201,15 @@ export function load(
  *
  * I also don't get doing nothing based on the currently visible app status
  *
+ * `Waiting` must be allowed through. When a load replaces media that is already playing,
+ * CAF aborts the outgoing media and the ABORT handler runs onStop(), which sets Waiting -
+ * and that abort can land *after* the new load's Backdrop but *before* the new media
+ * reaches PLAY. Gating on Backdrop/PlayingWithControls/Audio alone then skipped this whole
+ * block, so the new media played on while the body class stayed `waiting`. `.waiting` is
+ * `display: none` on the video element, so the picture vanished while the audio and the
+ * reported position carried on and the TV sat on the "Ready to cast" screen.
+ * `Details` is still excluded on purpose - that view is set deliberately by DisplayContent.
+ *
  * TODO: rename these
  * @param state - playback state.
  */
@@ -208,7 +217,8 @@ export function play(state: PlaybackState): void {
     if (
         DocumentManager.getAppStatus() == AppStatus.Backdrop ||
         DocumentManager.getAppStatus() == AppStatus.PlayingWithControls ||
-        DocumentManager.getAppStatus() == AppStatus.Audio
+        DocumentManager.getAppStatus() == AppStatus.Audio ||
+        DocumentManager.getAppStatus() == AppStatus.Waiting
     ) {
         setTimeout(() => {
             window.playerManager.play();
